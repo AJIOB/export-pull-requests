@@ -22,7 +22,11 @@ EXPORT_PRS = "pr"
 DEFAULT_BODY_LENGTH = 2 ** 32 - 1
 
 def localtime(t)
-  Time.parse(t).localtime.strftime("%x %X")
+  # MM/DD/YY HH:MM:SS
+  # Time.parse(t).localtime.strftime("%x %X")
+
+  # Epoch
+  Time.parse(t).localtime.to_i
 end
 
 def parse_repos(repos)
@@ -60,7 +64,7 @@ def bitbucket(user, repo)
 
   rows = []
   no_user = "Anonymous"
-  repo_name = "#{user}/#{repo}"
+  repo_name = "#{repo}"
 
   pull_requests = lambda do
     page = 0
@@ -70,18 +74,26 @@ def bitbucket(user, repo)
 
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => page, :state => $filter.upcase)
       prs["values"].each do |pr|
-        next if pr.author && skip_user?(pr.author.username)
+        next if pr.author && skip_user?(pr.author.display_name)
 
         rows << [
           repo_name,
           TYPE_PR,
           pr.id,
-          pr.author ? pr.author.username : no_user,
+          pr.author ? pr.author.display_name : no_user,
           pr.title,
           pr.state,
           localtime(pr.created_on),
           localtime(pr.updated_on),
-          pr["links"].html.href
+          pr["links"].html.href,
+          pr.summary.raw,
+          pr.summary.html,
+          !pr.source.commit.nil? ? pr.source.commit["hash"] : "",
+          !pr.destination.commit.nil? ? pr.destination.commit["hash"] : "",
+          !pr.source.branch.nil? ? pr.source.branch.name : "",
+          !pr.destination.branch.nil? ? pr.destination.branch.name : "",
+          !pr.reason.nil? ? pr.reason : "",
+          !pr.merge_commit.nil? ? pr.merge_commit["hash"] : ""
         ]
       end
 
@@ -226,7 +238,7 @@ end
 
 def export_repos(argv)
   rows = []
-  rows << %w[Repository Type # User Title State Created Updated URL]
+  rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit]
   rows[-1].insert(4, "Body") if $body
 
   repos = parse_repos(argv)
