@@ -15,9 +15,11 @@ GIT_CONFIGS = %w[epr.token github.oauth-token]
 
 TYPE_ISSUE = "Issue"
 TYPE_PR = "PR"
+TYPE_PR_COMMENT = "PR Comment"
 
 EXPORT_ISSUES = "issues"
 EXPORT_PRS = "pr"
+EXPORT_PR_COMMENTS = "pr_comments"
 
 DEFAULT_BODY_LENGTH = 2 ** 32 - 1
 
@@ -101,6 +103,43 @@ def bitbucket(user, repo)
     end
   end
 
+  pull_request_comments = lambda do
+    pr_page = 0
+    
+    loop do
+      pr_page += 1
+      prs = $bitbucket.repos.pull_request.all(user, repo, :page => pr_page, :state => $filter.upcase)
+      
+      prs["values"].each do |pr|
+        comment_page = 0
+        loop do
+          comment_page += 1
+          comments = $bitbucket.repos.pull_request.comments(user, repo, pr.id, :page => comment_page)
+          comments["values"].each do |comment|
+            rows << [
+              repo_name,
+              TYPE_PR_COMMENT,
+              comment.pullrequest.id,
+              comment.user.display_name,
+              comment.inline? ? "inline" : "normal",
+              comment.content.raw,
+              comment.content.html,
+              localtime(comment.updated_on),
+              comment.deleted,
+              comment.inline? ? comment.inline.to : "",
+              comment.inline? ? comment.inline.from : "",
+              comment.inline? ? comment.inline.path : "",
+              comment["links"].code? ? comment["links"].code.href : ""
+            ]
+          end
+          break unless comments["next"]
+        end
+      end
+
+      break unless prs["next"]
+    end
+  end
+
   issues = lambda do
     start = 0
 
@@ -132,6 +171,8 @@ def bitbucket(user, repo)
   case $export
   when EXPORT_PRS
     pull_requests[]
+  when EXPORT_PR_COMMENTS
+    pull_request_comments[]
   when EXPORT_ISSUES
     issues[]
   else
@@ -238,10 +279,16 @@ end
 
 def export_repos(argv)
   rows = []
-  rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit]
-  rows[-1].insert(4, "Body") if $body
 
+  if $export == EXPORT_PR_COMMENTS 
+    rows << %w[Repository Type PRNumber User CommentType BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff]
+  else
+    rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit]
+  end
+
+  rows[-1].insert(4, "Body") if $body
   repos = parse_repos(argv)
+
   repos.each do |user, repo|
     case $provider
     when "github"
@@ -318,7 +365,7 @@ parser = OptionParser.new do |opts|
     $token = t
   end
 
-  opts.on "-x", "--export=WHAT", %w[pr issues all], "What to export: pr, issues, or all; defaults to all" do |x|
+  opts.on "-x", "--export=WHAT", %w[pr pr_comments issues all], "What to export: pr, pr_comments, issues, or all; defaults to all" do |x|
     $export = x
   end
 
