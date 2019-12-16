@@ -10,7 +10,7 @@ Supports GitHub, GitLab, and Bitbucket.
 
 With Ruby installed run:
 
-    gem install export-pull-requests
+    gem install zz-export-pull-requests
 
 This installs the `epr` executable.
 
@@ -27,7 +27,7 @@ This installs the `epr` executable.
         -p, --provider=NAME              Service provider: bitbucket, github, or gitlab; defaults to github
         -s, --state=STATE                Export items in the given state, defaults to open
         -t, --token=TOKEN                API token
-        -x, --export=WHAT                What to export: pr, issues, or all; defaults to all
+        -x, --export=WHAT                What to export: pr, pr_comments (BitBucket only), issues, or all; defaults to all
         -v, --version                    epr version
 
 ### Config
@@ -38,9 +38,9 @@ These can all be set by one of the below methods or [via the command line](#usag
 
 The API token can be set by:
 
-* `EPR_TOKEN` environment variable
-* `epr.token` setting in `.gitconfig` (add via `git config --add epr.token <your API token>`)
-* `github.oauth-token` setting in `.gitconfig`
+- `EPR_TOKEN` environment variable
+- `epr.token` setting in `.gitconfig` (add via `git config --add epr.token <your API token>`)
+- `github.oauth-token` setting in `.gitconfig`
 
 #### Default Service
 

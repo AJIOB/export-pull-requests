@@ -1,16 +1,16 @@
 require "date"
 
 Gem::Specification.new do |s|
-  s.name        = "export-pull-requests"
-  s.version     = "0.3.3"
+  s.name        = "zz-export-pull-requests"
+  s.version     = "0.3.4"
   s.date        = Date.today
   s.summary     = "Export pull requests and issues to a CSV file."
-  s.description = "Program to export GitHub, GitLab, or Bitbucket pull requests/merge requests and issues to CSV a file."
-  s.authors     = ["Skye Shaw"]
-  s.email       = "skye.shaw@gmail.com"
+  s.description = "Program to export GitHub, GitLab, or Bitbucket pull requests/merge requests and issues to CSV a file. This is forked version of https://github.com/sshaw/export-pull-requests project."
+  s.authors     = ["Zulhilmi Zainudin"]
+  s.email       = "zulhfreelancer@gmail.com"
   s.executables  << "epr"
   s.extra_rdoc_files = %w[README.md Changes]
-  s.homepage    = "https://github.com/sshaw/export-pull-requests"
+  s.homepage    = "https://github.com/zulhfreelancer/export-pull-requests"
   s.license     = "MIT"
   s.add_dependency "github_api", "~> 0.16"
   s.add_dependency "gitlab", "~> 4.0"
