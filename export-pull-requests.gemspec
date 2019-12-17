@@ -2,7 +2,7 @@ require "date"
 
 Gem::Specification.new do |s|
   s.name        = "zz-export-pull-requests"
-  s.version     = "0.3.5"
+  s.version     = "0.3.6"
   s.date        = Date.today
   s.summary     = "Export pull requests and issues to a CSV file."
   s.description = "Program to export GitHub, GitLab, or Bitbucket pull requests/merge requests and issues to CSV a file. This is forked version of https://github.com/sshaw/export-pull-requests project."
