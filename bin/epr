@@ -120,7 +120,7 @@ def bitbucket(user, repo)
               repo_name,
               TYPE_PR_COMMENT,
               comment.pullrequest.id,
-              comment.user.display_name,
+              comment.user? ? comment.user.display_name : no_user,
               comment.inline? ? "inline" : "normal",
               comment.content.raw,
               comment.content.html,
