@@ -9,7 +9,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.6"
+VERSION = "0.3.7"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -55,6 +55,11 @@ def lookup_token
   end
 end
 
+def get_full_hash(user, repo, short_hash)
+  result = $bitbucket.repos.commit.get_one(user, repo, short_hash)
+  return result["hash"]
+end
+
 def bitbucket(user, repo)
   # TODO: make sure no need to translate any states
   # https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Busername%7D/%7Brepo_slug%7D/pullrequests
@@ -90,8 +95,8 @@ def bitbucket(user, repo)
           pr["links"].html.href,
           pr.summary.raw,
           pr.summary.html,
-          !pr.source.commit.nil? ? pr.source.commit["hash"] : "",
-          !pr.destination.commit.nil? ? pr.destination.commit["hash"] : "",
+          !pr.source.commit.nil? ? get_full_hash(user, repo, pr.source.commit["hash"]) : "",
+          !pr.destination.commit.nil? ? get_full_hash(user, repo, pr.destination.commit["hash"]) : "",
           !pr.source.branch.nil? ? pr.source.branch.name : "",
           !pr.destination.branch.nil? ? pr.destination.branch.name : "",
           !pr.reason.nil? ? pr.reason : "",
