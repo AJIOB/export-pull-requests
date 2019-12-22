@@ -9,7 +9,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.8"
+VERSION = "0.3.9"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -53,6 +53,14 @@ def lookup_token
   rescue Errno::ENOENT
     # git not found, ignore
   end
+end
+
+def extract_hash_from_diff(user, repo, diff_link)
+  str1 = diff_link.split("..")
+  str2 = str1[1].split("?")
+  short_hash = str2[0]
+  long_hash = get_full_hash(user, repo, short_hash)
+  return long_hash
 end
 
 def get_full_hash(user, repo, short_hash)
@@ -137,7 +145,8 @@ def bitbucket(user, repo)
               comment.inline? ? comment.inline.from : "",
               comment.inline? ? comment.inline.path : "",
               comment["links"].code? ? comment["links"].code.href : "",
-              comment.parent? ? comment.parent.id : ""
+              comment.parent? ? comment.parent.id : "",
+              comment["links"].code? ? extract_hash_from_diff(user, repo, comment["links"].code.href) : ""
             ]
           end
           break unless comments["next"]
@@ -289,7 +298,7 @@ def export_repos(argv)
   rows = []
 
   if $export == EXPORT_PR_COMMENTS 
-    rows << %w[Repository Type PRNumber User CommentType CommentID BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff ParentID]
+    rows << %w[Repository Type PRNumber User CommentType CommentID BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff ParentID CommitHash]
   else
     rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit ClosedBy]
   end
