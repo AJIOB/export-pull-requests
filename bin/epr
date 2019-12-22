@@ -100,7 +100,8 @@ def bitbucket(user, repo)
           !pr.source.branch.nil? ? pr.source.branch.name : "",
           !pr.destination.branch.nil? ? pr.destination.branch.name : "",
           !pr.reason.nil? ? pr.reason : "",
-          !pr.merge_commit.nil? ? pr.merge_commit["hash"] : ""
+          !pr.merge_commit.nil? ? pr.merge_commit["hash"] : "",
+          !pr.closed_by.nil? ? pr.closed_by.display_name : ""
         ]
       end
 
@@ -127,6 +128,7 @@ def bitbucket(user, repo)
               comment.pullrequest.id,
               comment.user? ? comment.user.display_name : no_user,
               comment.inline? ? "inline" : "normal",
+              comment.id,
               comment.content.raw,
               comment.content.html,
               localtime(comment.updated_on),
@@ -134,7 +136,8 @@ def bitbucket(user, repo)
               comment.inline? ? comment.inline.to : "",
               comment.inline? ? comment.inline.from : "",
               comment.inline? ? comment.inline.path : "",
-              comment["links"].code? ? comment["links"].code.href : ""
+              comment["links"].code? ? comment["links"].code.href : "",
+              comment.parent? ? comment.parent.id : ""
             ]
           end
           break unless comments["next"]
@@ -286,9 +289,9 @@ def export_repos(argv)
   rows = []
 
   if $export == EXPORT_PR_COMMENTS 
-    rows << %w[Repository Type PRNumber User CommentType BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff]
+    rows << %w[Repository Type PRNumber User CommentType CommentID BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff ParentID]
   else
-    rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit]
+    rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit ClosedBy]
   end
 
   rows[-1].insert(4, "Body") if $body
