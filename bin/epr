@@ -9,7 +9,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.9"
+VERSION = "0.3.10"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -55,10 +55,12 @@ def lookup_token
   end
 end
 
+# extract "a3351540a2da" from
+# given "https://api.bitbucket.org/2.0/repositories/hellogold/walletfactory/diff/hellogold/walletfactory:a3351540a2da..05675a5ae8ed?path=go%2Fwalletfactory%2F.gitignore"
 def extract_hash_from_diff(user, repo, diff_link)
   str1 = diff_link.split("..")
-  str2 = str1[1].split("?")
-  short_hash = str2[0]
+  str2 = str1[0].split(":")
+  short_hash = str2[2]
   long_hash = get_full_hash(user, repo, short_hash)
   return long_hash
 end
