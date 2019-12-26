@@ -2,7 +2,7 @@ require "date"
 
 Gem::Specification.new do |s|
   s.name        = "zz-export-pull-requests"
-  s.version     = "0.3.10"
+  s.version     = "0.3.11"
   s.date        = Date.today
   s.summary     = "Export pull requests and issues to a CSV file."
   s.description = "Program to export GitHub, GitLab, or Bitbucket pull requests/merge requests and issues to CSV a file. This is forked version of https://github.com/sshaw/export-pull-requests project."
@@ -16,5 +16,6 @@ Gem::Specification.new do |s|
   s.add_dependency "gitlab", "~> 4.0"
   s.add_dependency 'zz_bitbucket_rest_api', '~> 0.1.11'
   s.add_development_dependency "rake", "~> 0.9"
+  s.add_development_dependency "redis", '~> 4.1', '>= 4.1.3'
   s.post_install_message = "Use the `epr' command to export your pull requests."
 end

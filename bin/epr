@@ -4,12 +4,13 @@ require "csv"
 require "optparse"
 require "time"
 require "logger"
+require 'redis'
 
 require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.10"
+VERSION = "0.3.11"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -22,6 +23,16 @@ EXPORT_PRS = "pr"
 EXPORT_PR_COMMENTS = "pr_comments"
 
 DEFAULT_BODY_LENGTH = 2 ** 32 - 1
+BITBUCKET_RATE_LIMIT = 950 # actually, it's 1000 - we play safe here
+
+# To store rate limit information for fast read & write.
+# Data will persist in Redis DB/server until we shut it down.
+# Docs: https://www.rubydoc.info/github/redis/redis-rb/master/frames
+# Read: https://www.mikeperham.com/2015/09/24/storing-data-with-redis/#databases
+$redisLogger = Logger.new(STDOUT)
+$redisLogger.info("HELLO FROM REDIS LOGGER")
+$redis = Redis.new(host: "localhost", db: 15)
+$redis.set("bb-executed", 0) if $redis.get("bb-executed").nil?
 
 def localtime(t)
   # MM/DD/YY HH:MM:SS
@@ -66,8 +77,32 @@ def extract_hash_from_diff(user, repo, diff_link)
 end
 
 def get_full_hash(user, repo, short_hash)
-  result = $bitbucket.repos.commit.get_one(user, repo, short_hash)
-  return result["hash"]
+  sleep_if_limit_reached
+
+  begin
+    result = $bitbucket.repos.commit.get_one(user, repo, short_hash)
+    $redis.incr("bb-executed")
+    return result["hash"]
+  rescue
+    $redis.incr("bb-executed")
+    return "bb-import-commit-not-found"
+  end
+end
+
+def sleep_if_limit_reached
+  executions = $redis.get("bb-executed").to_i
+  $redisLogger.info("We have called the API for #{executions} times")
+
+  if executions >= BITBUCKET_RATE_LIMIT
+    now = Time.now
+    now_formatted = now.strftime("%I:%M:%S")
+    one_hour = 1*60*60
+    later = now + one_hour
+    later_formatted = later.strftime("%I:%M:%S")
+    $redisLogger.info("#{now_formatted} - Rate limit reached. Will pause for an hour and will resume at #{later_formatted}.")
+    sleep one_hour
+    $redis.set("bb-executed", 0)
+  end
 end
 
 def bitbucket(user, repo)
@@ -88,6 +123,7 @@ def bitbucket(user, repo)
 
     loop do
       page += 1
+      sleep_if_limit_reached
 
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => page, :state => $filter.upcase)
       prs["values"].each do |pr|
@@ -115,6 +151,7 @@ def bitbucket(user, repo)
         ]
       end
 
+      $redis.incr("bb-executed")
       break unless prs["next"]
     end
   end
@@ -124,12 +161,15 @@ def bitbucket(user, repo)
     
     loop do
       pr_page += 1
+      sleep_if_limit_reached
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => pr_page, :state => $filter.upcase)
       
       prs["values"].each do |pr|
         comment_page = 0
         loop do
           comment_page += 1
+          sleep_if_limit_reached
+
           comments = $bitbucket.repos.pull_request.comments(user, repo, pr.id, :page => comment_page)
           comments["values"].each do |comment|
             rows << [
@@ -151,10 +191,12 @@ def bitbucket(user, repo)
               comment["links"].code? ? extract_hash_from_diff(user, repo, comment["links"].code.href) : ""
             ]
           end
+          $redis.incr("bb-executed")
           break unless comments["next"]
         end
       end
-
+      
+      $redis.incr("bb-executed")
       break unless prs["next"]
     end
   end
