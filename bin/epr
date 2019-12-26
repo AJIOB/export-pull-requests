@@ -10,7 +10,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.11"
+VERSION = "0.3.13"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -30,7 +30,9 @@ BITBUCKET_RATE_LIMIT = 950 # actually, it's 1000 - we play safe here
 # Docs: https://www.rubydoc.info/github/redis/redis-rb/master/frames
 # Read: https://www.mikeperham.com/2015/09/24/storing-data-with-redis/#databases
 $redisLogger = Logger.new(STDOUT)
-$redisLogger.info("HELLO FROM REDIS LOGGER")
+$redisLogger.formatter = proc {|severity, datetime, progname, msg|
+  "[#{datetime.strftime('%d/%m/%Y %H:%M:%S')}] EPR-#{severity} - #{msg}\n"
+}
 $redis = Redis.new(host: "localhost", db: 15)
 $redis.set("bb-executed", 0) if $redis.get("bb-executed").nil?
 
@@ -91,7 +93,7 @@ end
 
 def sleep_if_limit_reached
   executions = $redis.get("bb-executed").to_i
-  $redisLogger.info("We have called the API for #{executions} times")
+  $redisLogger.info("We have called the API for #{executions} times") if ENV['SHOW_LOGS']
 
   if executions >= BITBUCKET_RATE_LIMIT
     now = Time.now
@@ -99,7 +101,9 @@ def sleep_if_limit_reached
     one_hour = 1*60*60
     later = now + one_hour
     later_formatted = later.strftime("%I:%M:%S")
-    $redisLogger.info("#{now_formatted} - Rate limit reached. Will pause for an hour and will resume at #{later_formatted}.")
+    if ENV['SHOW_LOGS']
+      $redisLogger.info("#{now_formatted} - Rate limit reached. Will pause for an hour and will resume at #{later_formatted}.")
+    end
     sleep one_hour
     $redis.set("bb-executed", 0)
   end
