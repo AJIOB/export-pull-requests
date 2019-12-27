@@ -10,7 +10,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.15"
+VERSION = "0.3.16"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -169,7 +169,7 @@ def bitbucket(user, repo)
     
     loop do
       pr_page += 1
-      check_api_rate_limit
+      sleep_if_limit_reached
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => pr_page, :state => $filter.upcase)
       
       prs["values"].each do |pr|
