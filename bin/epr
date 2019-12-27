@@ -10,7 +10,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.14"
+VERSION = "0.3.15"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -93,8 +93,6 @@ end
 
 def sleep_if_limit_reached
   executions = $redis.get("bb-executed").to_i
-  $redisLogger.info("We have called the API for #{executions} times") if ENV['SHOW_LOGS']
-
   if executions >= BITBUCKET_RATE_LIMIT
     now = Time.now
     now_formatted = now.strftime("%I:%M:%S")
@@ -107,6 +105,12 @@ def sleep_if_limit_reached
     sleep one_hour
     $redis.set("bb-executed", 0)
   end
+end
+
+def check_api_rate_limit
+  executions = $redis.get("bb-executed").to_i
+  $redisLogger.info("We have called the API for #{executions} times") if ENV['SHOW_LOGS']
+  sleep_if_limit_reached
 end
 
 def bitbucket(user, repo)
@@ -127,7 +131,7 @@ def bitbucket(user, repo)
 
     loop do
       page += 1
-      sleep_if_limit_reached
+      check_api_rate_limit
 
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => page, :state => $filter.upcase)
       prs["values"].each do |pr|
@@ -165,14 +169,14 @@ def bitbucket(user, repo)
     
     loop do
       pr_page += 1
-      sleep_if_limit_reached
+      check_api_rate_limit
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => pr_page, :state => $filter.upcase)
       
       prs["values"].each do |pr|
         comment_page = 0
         loop do
           comment_page += 1
-          sleep_if_limit_reached
+          check_api_rate_limit
 
           comments = $bitbucket.repos.pull_request.comments(user, repo, pr.id, :page => comment_page)
           comments["values"].each do |comment|
