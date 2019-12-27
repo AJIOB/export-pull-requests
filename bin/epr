@@ -10,7 +10,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.13"
+VERSION = "0.3.14"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -29,7 +29,7 @@ BITBUCKET_RATE_LIMIT = 950 # actually, it's 1000 - we play safe here
 # Data will persist in Redis DB/server until we shut it down.
 # Docs: https://www.rubydoc.info/github/redis/redis-rb/master/frames
 # Read: https://www.mikeperham.com/2015/09/24/storing-data-with-redis/#databases
-$redisLogger = Logger.new(STDOUT)
+$redisLogger = Logger.new(STDERR)
 $redisLogger.formatter = proc {|severity, datetime, progname, msg|
   "[#{datetime.strftime('%d/%m/%Y %H:%M:%S')}] EPR-#{severity} - #{msg}\n"
 }
