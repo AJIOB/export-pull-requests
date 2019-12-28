@@ -10,7 +10,7 @@ require "github_api"
 require "gitlab"
 require "bitbucket_rest_api"
 
-VERSION = "0.3.16"
+VERSION = "0.3.17"
 SERVICES = %w[github gitlab bitbucket]
 GIT_CONFIGS = %w[epr.token github.oauth-token]
 
@@ -95,12 +95,11 @@ def sleep_if_limit_reached
   executions = $redis.get("bb-executed").to_i
   if executions >= BITBUCKET_RATE_LIMIT
     now = Time.now
-    now_formatted = now.strftime("%I:%M:%S")
     one_hour = 1*60*60
     later = now + one_hour
     later_formatted = later.strftime("%I:%M:%S")
     if ENV['SHOW_LOGS']
-      $redisLogger.info("#{now_formatted} - Rate limit reached. Will pause for an hour and will resume at #{later_formatted}.")
+      $redisLogger.info("Rate limit reached. Will pause for an hour and will resume at #{later_formatted}.")
     end
     sleep one_hour
     $redis.set("bb-executed", 0)
