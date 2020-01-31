@@ -10,6 +10,7 @@ Supports GitHub, GitLab, and Bitbucket.
 
 With Ruby installed run:
 
+    gem install redis # needed to stay under BitBucket rate limit
     gem install zz-export-pull-requests
 
 This installs the `epr` executable.
