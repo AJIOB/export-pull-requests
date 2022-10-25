@@ -8,10 +8,11 @@ Supports GitHub, GitLab, and Bitbucket.
 
 [Ruby](https://www.ruby-lang.org/en/documentation/installation/) is required.
 
-With Ruby installed run:
+With Ruby 2.7 installed run:
 
     gem install redis # needed to stay under BitBucket rate limit
-    gem install zz-export-pull-requests
+    gem install faraday -v 1.10.2 # needed to fix loopback dependencies
+    gem install zz-export-pull-requests # Recommends to force build that & bitbucket packages from sources: https://stackoverflow.com/a/28758549/6818663
 
 This installs the `epr` executable.
 

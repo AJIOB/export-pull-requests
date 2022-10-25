@@ -165,12 +165,12 @@ def bitbucket(user, repo)
 
   pull_request_comments = lambda do
     pr_page = 0
-    
+
     loop do
       pr_page += 1
       sleep_if_limit_reached
       prs = $bitbucket.repos.pull_request.all(user, repo, :page => pr_page, :state => $filter.upcase)
-      
+
       prs["values"].each do |pr|
         comment_page = 0
         loop do
@@ -202,7 +202,7 @@ def bitbucket(user, repo)
           break unless comments["next"]
         end
       end
-      
+
       $redis.incr("bb-executed")
       break unless prs["next"]
     end
@@ -348,7 +348,7 @@ end
 def export_repos(argv)
   rows = []
 
-  if $export == EXPORT_PR_COMMENTS 
+  if $export == EXPORT_PR_COMMENTS
     rows << %w[Repository Type PRNumber User CommentType CommentID BodyRaw BodyHTML CreatedAt IsDeleted ToLine FromLine FilePath Diff ParentID CommitHash]
   else
     rows << %w[Repository Type # User Title State CreatedAt UpdatedAt URL BodyRaw BodyHTML SourceCommit DestinationCommit SourceBranch DestinationBranch DeclineReason MergeCommit ClosedBy]
